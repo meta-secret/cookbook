@@ -1,0 +1,8 @@
+.idea
+
+wasm/target
+wasm/pkg
+
+ui/node_modules
+ui/.svelte-kit
+ui/pkg

@@ -1,0 +1,45 @@
+VERSION 0.8
+FROM scratch
+
+wasm-base:
+    FROM rust:1.80.1
+
+    #RUN cargo install wasm-pack@0.12.1
+    RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+wasm-build:
+    FROM +wasm-base
+
+    ENV COOKBOOK_DIR=/cookbook
+
+    COPY wasm ${COOKBOOK_DIR}/wasm
+
+    WORKDIR ${COOKBOOK_DIR}/wasm
+
+    RUN wasm-pack build --target web
+    SAVE ARTIFACT pkg AS LOCAL ui/pkg
+
+web-build:
+    FROM node:22.7-bookworm
+
+    ENV COOKBOOK_DIR=/cookbook
+
+    COPY ui ${COOKBOOK_DIR}/ui
+    COPY +wasm-build/pkg ${COOKBOOK_DIR}/ui/pkg
+
+    WORKDIR ${COOKBOOK_DIR}/ui
+
+    RUN npm install && npm run build
+    SAVE IMAGE meta-secret-web-reactive-state:latest
+
+# Utility functions
+wasm-project-generator:
+    FROM +wasm-base
+
+    ENV USER=root
+    ENV COOKBOOK_DIR=/cookbook
+
+    WORKDIR ${COOKBOOK_DIR}
+
+    RUN --no-cache wasm-pack new wasm
+    SAVE ARTIFACT wasm AS LOCAL wasm
